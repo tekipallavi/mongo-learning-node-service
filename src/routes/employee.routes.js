@@ -5,4 +5,4 @@ const { getEmployeeDetails } = require( "../controllers/employee.controller.js")
 
 router.get('/:id', getEmployeeDetails);
 
-module.excports =  router;
+module.exports =  router;
