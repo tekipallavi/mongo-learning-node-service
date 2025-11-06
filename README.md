@@ -56,8 +56,11 @@ Project:
 - Client name
 - Tech stack
 - Project status (open for interest, pending interests,  open for proposals, pending evaluation, Accepted, rejected )
-- Interests
-- selectedInterests
-- Proposals
-- Accepted proposal
+- ProjectStatusId
+- Interests - [employee Id]
+- selectedInterests - - [employee Id]
+- Proposals - [ProposalIds]
+- Accepted proposal - Id
+- startDate
+- endDate
 
