@@ -18,39 +18,40 @@ Employee:
 
 
 
-Proposal:
-- Proposal Id
-- Project Id
-- Project name
-- Tech stack
-- Timeline
-- Status
-- submitted employee Id
-- verions : [ v1, v2, v3]
+Proposal: (src)
+- proposalId - string , unique
+- projectId - string
+- projectName - string
+- techStack - array - add enum, unique items
+- submittedDate - date 
+- statusId - reviewed, open, selected, rejected  [0,1,2,3]
+- employeeId - string 
+- verions -  array of strings , unique items [ v1, v2, v3]
+-comments - array of strings, unique or []
 
-version collection:
-- version id
-- description
-- timestamp
-- proposal ID
-- comments
-
-Employee
-- EmployeeId
-- Employee Name
-- Tech stack
-- Experience
-- Proposals 
-- Interests
+version collection: (src2)
+- version id - string
+- description - string
+- timestamp - timestamp
+- proposal ID - string
 
 
-Interests
-- Project ID
-- Employee Id
-- Status
-- Timestamp
+Employee (required - employeeId, employeeName, tech stack) (src2)
+- EmployeeId - string
+- employeeName - string
+- techStack - array of strings - no enum
+- Experience - decimal  |  null
+- Proposals - array of strings (proposalId), unique  | []
+- Interests - array of strings (projectId), unique || []
 
-Project:
+
+Interests (all required) (src)
+- Project ID - string
+- Employee Id - string
+- Status - open, selected, rejected ,  number , enum - [0,1,2]
+- Timestamp - Timestamp
+
+Project: [Not required - proposals, interests, accepted proposals]
 - Project Id
 - Project name
 - Client name
@@ -64,3 +65,4 @@ Project:
 - startDate
 - endDate
 
+// Need to check if an employee collection has proposal Id that is present in proposals collection
