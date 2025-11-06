@@ -56,7 +56,7 @@ Project: [Not required - proposals, interests, accepted proposals]
 - Project name
 - Client name
 - Tech stack
-- Project status (open for interest, pending interests,  open for proposals, pending evaluation, Accepted, rejected )
+- Project status (open for interests,  open for proposals, pending evaluation, Accepted, rejected )
 - ProjectStatusId
 - Interests - [employee Id]
 - selectedInterests - - [employee Id]
@@ -66,3 +66,22 @@ Project: [Not required - proposals, interests, accepted proposals]
 - endDate
 
 // Need to check if an employee collection has proposal Id that is present in proposals collection
+
+// Requirement
+
+
+create employee API
+- required attributes ?
+- min one tech stack is required
+
+
+Project create API
+- required attributes
+- set default status to open for interests
+
+
+Proposal create API 
+- projectId should exists in current project collection
+- employee id should exist in current employee collection
+- tech stack should be a subset of project tech stack
+- set default status to open
