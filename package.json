@@ -9,7 +9,11 @@
   "scripts": {
     "start": "node index.js",
     "i-s": "npm i && node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "execute-migrations": "migrate-mongo up",
+    "execute-rollback": "migrate-mongo down",
+    "execute-scripts": "node ./scripts/script.js",
+    "execute-scripts-inspect": "node --inspect-brk ./scripts/script.js"
   },
   "dependencies": {
     "body-parser": "^2.2.0",
