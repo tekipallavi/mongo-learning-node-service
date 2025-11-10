@@ -1,8 +1,8 @@
 const { db } = require('../db/db.connection');
 
-const createProject = () => {
+const createProject = async () => {
     try {
-        db.createCollection("Project", {
+        const collection = db.createCollection("Project", {
             validator: {
                 $jsonSchema: {
                     bsonType: 'object',
@@ -73,6 +73,7 @@ const createProject = () => {
                 }
             }
         });
+        console.log("Project collection created with schema validation.", collection.collectionName);
     } catch (error) {
         if (error.codeName === "NamespaceExists") {
             console.error("Collection already exists. Skipping creation.");
