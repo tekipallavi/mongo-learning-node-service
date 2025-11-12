@@ -3,9 +3,12 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 let app = express();
+const {setEmployeeDetails} = require('./src/controllers/employee.controller.js')
 
 const employeeRoutes = require("./src/routes/employee.routes.js");
 const employeeRoutesV2 = require("./src-v2/routes/employee.routes.js");
+
+const projectRoutes = require("./src/routes/project.routes.js");
 
 async function startDb() {
   try {
@@ -29,6 +32,17 @@ loadService = () => {
 
   app.use('/employee', employeeRoutes);
   app.use('/employee-v2', employeeRoutesV2);
+  
+  app.use('/project', projectRoutes);
+
+  // testing
+  setEmployeeDetails({
+    body : {
+      name: 5,
+      techStack: ['angular', 'javascript'],
+      experience: 'test'
+    }
+  })
 }
 
 app.listen(process.env.PORT || 3001, () => {

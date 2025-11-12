@@ -32,7 +32,7 @@ const createEmployeesCollection = async () => {
               description: "Array of technologies known by the employee",
             },
             experience: {
-              bsonType: ["decimal", "double", "int", "long", "null"],
+              bsonType: ["decimal", "double", "int", "long"],
               description: "Years of experience the employee has",
             },
             proposals: {

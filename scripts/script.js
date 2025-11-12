@@ -14,7 +14,8 @@ const getConnection = async () => {
 const executeScript = () => {
   // createProject();
   // createProposal();
-  createInterest();
+  //createInterest();
+  createEmployeesCollection();
 };
 
 getConnection();
