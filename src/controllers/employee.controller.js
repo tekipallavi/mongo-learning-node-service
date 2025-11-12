@@ -15,7 +15,7 @@ const setEmployeeDetails = async (req, res) => {
     res.status(400).send('Please add a valid experience')
   }
   try{
-      const insertStatus = await db.collection(collections.employee).insert(record);   
+      const insertStatus = await db.collection(collections.employee).insertOne(record);   
       console.log(insertStatus)   
       //res.status(200).send("Working");
   }catch(e){
