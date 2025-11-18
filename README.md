@@ -97,3 +97,7 @@ Indexes:
 
 - Employee
   -- Unique index on EmployeeID
+  -- multi key index on tech stack
+  -- filtering
+  -- Search
+  -- Sort
