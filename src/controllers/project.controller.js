@@ -107,7 +107,7 @@ const getProjects = async (req, res) => {
     let techStack = [];
     if (req && req.body && req.body.techStack && req.body.techStack.length) {
       techStack = req.body.techStack.split(",").map(tech => tech.trim());
-    }else{
+    } else {
       techStack = ['react'];
     }
     const page = req?.body?.page ? parseInt(req?.body?.page) : 0;
@@ -122,14 +122,36 @@ const getProjects = async (req, res) => {
 }
 
 const updateProjectDetails = async (req, res) => {
+  const currentDate = new Date();
+  const lessThanSixMonths = currentDate.setMonth(new Date().getMonth() - 6);
+  const sixMonthsFromToday = currentDate.setMonth(new Date().getMonth() + 6);
+  const getResult = await db
+    .collection(collections.project)
+    .find(
+      // get records with endDate less than 6 months old and ends in 6 months from today
+      {
+        endDate: {
+          $gt: new Date(lessThanSixMonths),      // greater than 6 months ago
+          $lt: new Date(sixMonthsFromToday)      // less than 6 months from now
+        }
+      }
+
+    ).toArray();
+  console.log("Projects to be updated:", getResult);
   const result = await db
     .collection(collections.project)
     .updateMany(
       // get records with endDate less than 6 months old and ends in 6 months from today
-      { endDate: {$gt: new Date() - 1000*60*60*24*180, $lt: new Date() + 1000*60*60*24*180} },
+      {
+        endDate: {
+          $gt: new Date(lessThanSixMonths),      // greater than 6 months ago
+          $lt: new Date(sixMonthsFromToday)      // less than 6 months from now
+        }
+      },
       // extend the date by 3 years from today
-      
+      [{ $set: { endDate: { $dateAdd: { startDate: "$endDate", unit: "year", amount: 3 } } } }]
     )
+  console.log("Projects updated:", result.modifiedCount);
 };
 
 module.exports = {
@@ -137,5 +159,6 @@ module.exports = {
   getProjectDetails,
   createFakeProjects,
   countProjectDocuments,
-  getProjects
+  getProjects,
+  updateProjectDetails
 };
