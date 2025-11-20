@@ -1,3 +1,4 @@
+const { ObjectId } = require("mongodb");
 const { db } = require("../../db/db.connection");
 const {
   collections,
@@ -40,9 +41,9 @@ async function createFakeProjects(count = 50) {
       const maybeHasEnd = faker.datatype.boolean();
       const endDate = maybeHasEnd
         ? new Date(
-            startDate.getTime() +
-              faker.number.int({ min: 30, max: 365 }) * 24 * 60 * 60 * 1000
-          )
+          startDate.getTime() +
+          faker.number.int({ min: 30, max: 365 }) * 24 * 60 * 60 * 1000
+        )
         : null;
 
       /* const proposals = Array.from(
@@ -101,9 +102,29 @@ async function countProjectDocuments() {
   }
 }
 
+const getProjects = async (req, res) => {
+  try {
+    let techStack = [];
+    if (req && req.body && req.body.techStack && req.body.techStack.length) {
+      techStack = req.body.techStack.split(",").map(tech => tech.trim());
+    }else{
+      techStack = ['react'];
+    }
+    const page = req?.body?.page ? parseInt(req?.body?.page) : 0;
+    const recordsPerPage = req?.body?.records ? parseInt(req?.body?.records) : 20;
+    const query = techStack.length ? { techStack: { $in: techStack }, endDate: { $gt: new Date() } } : {};
+    const response = await db.collection(collections.project).find(query).sort({ endDate: 1 }).skip(page * recordsPerPage).limit(recordsPerPage).toArray();
+    console.log("Projects matching employee tech stack:", response);
+  } catch (e) {
+    console.error("Error fetching projects:", e);
+  }
+
+}
+
 module.exports = {
   setProjectDetails,
   getProjectDetails,
   createFakeProjects,
   countProjectDocuments,
+  getProjects
 };

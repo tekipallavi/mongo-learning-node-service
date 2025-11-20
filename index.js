@@ -9,7 +9,7 @@ const {
  createEmployeeIndex, getFilterSearchEmployee} = require("./src/controllers/employee.controller.js");
 const {
   createProjects,
-  countProjectDocuments,
+  countProjectDocuments, getProjects,
 } = require("./src/controllers/project.controller.js");
 
 const employeeRoutes = require("./src/routes/employee.routes.js");
@@ -42,10 +42,7 @@ loadService = async () => {
   app.use("/project", projectRoutes);
 
   // test
-  getFilterSearchEmployee()
-  
-  //createProjects(1000);
-  countProjectDocuments();
+  getProjects();
 };
 
 app.listen(process.env.PORT || 3001, () => {
