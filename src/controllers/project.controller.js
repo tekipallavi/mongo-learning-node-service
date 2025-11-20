@@ -25,9 +25,8 @@ const getProjectDetails = async (req, res) => {
   res.send("Working");
 };
 
-async function createProjects(count = 50) {
+async function createFakeProjects(count = 50) {
   const TECHS = ["angular", "javascript", "react", "nodejs", "azure", ".net"];
-  // await client.connect();
   try {
     const docs = [];
     for (let i = 0; i < count; i++) {
@@ -94,10 +93,7 @@ async function createProjects(count = 50) {
 
 async function countProjectDocuments() {
   try {
-    //const count = await db.collection(collections.project).countDocuments();
-    const count = await db
-      .collection(collections.project)
-      .findOne({ _id: "691e73051e829b86c34f00e1" });
+    const count = await db.collection(collections.project).countDocuments();
     console.log("Total projects in DB:", count);
   } catch (e) {
     console.error("Error counting project documents:", e);
@@ -108,6 +104,6 @@ async function countProjectDocuments() {
 module.exports = {
   setProjectDetails,
   getProjectDetails,
-  createProjects,
+  createFakeProjects,
   countProjectDocuments,
 };

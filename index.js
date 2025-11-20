@@ -6,7 +6,7 @@ let app = express();
 const {
   createFakeEmployees,
   setEmployeeDetails,
-, createEmployeeIndex, getFilterSearchEmployee} = require("./src/controllers/employee.controller.js");
+ createEmployeeIndex, getFilterSearchEmployee} = require("./src/controllers/employee.controller.js");
 const {
   createProjects,
   countProjectDocuments,
