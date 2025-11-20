@@ -121,6 +121,17 @@ const getProjects = async (req, res) => {
 
 }
 
+const updateProjectDetails = async (req, res) => {
+  const result = await db
+    .collection(collections.project)
+    .updateMany(
+      // get records with endDate less than 6 months old and ends in 6 months from today
+      { endDate: {$gt: new Date() - 1000*60*60*24*180, $lt: new Date() + 1000*60*60*24*180} },
+      // extend the date by 3 years from today
+      
+    )
+};
+
 module.exports = {
   setProjectDetails,
   getProjectDetails,
