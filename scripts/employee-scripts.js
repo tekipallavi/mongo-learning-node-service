@@ -75,4 +75,9 @@ const deleteEmployeesCollection = async () => {
   }
 };
 
-module.exports = { createEmployeesCollection, deleteEmployeesCollection };
+const createEmployeeIndex = async () => {
+  const result = await db.collection(collections.employee).createIndex({employeeID: 1}, {unique: true});
+  console.log("index created", result)
+}
+
+module.exports = { createEmployeesCollection, deleteEmployeesCollection, createEmployeeIndex };

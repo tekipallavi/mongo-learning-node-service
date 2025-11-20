@@ -6,4 +6,8 @@ const { getEmployeeDetails, setEmployeeDetails } = require( "../controllers/empl
 router.get('/:id', getEmployeeDetails);
 router.get('register', setEmployeeDetails);
 
+router.get('/test', (req, res) => {
+    setEmployeeDetails({body: {name: 'test1', techStack: ['React'], experience: 2}}, res);
+})
+
 module.exports =  router;

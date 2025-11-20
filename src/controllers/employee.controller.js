@@ -4,7 +4,7 @@ const { faker } = require('@faker-js/faker');
 
 const setEmployeeDetails = async (req, res) => {
   let record = {
-    employeeID: generateUUID(),
+    employeeID: 'f837eb08-9939-4b05-b297-628296bf02ce',
     name: req.body.name,
     techStack: req.body.techStack,
     experience: req.body.experience,
@@ -16,14 +16,20 @@ const setEmployeeDetails = async (req, res) => {
   }
   try{
       const insertStatus = await db.collection(collections.employee).insertOne(record);   
-      console.log(insertStatus)   
-      //res.status(200).send("Working");
+      console.log('testing insert!!',insertStatus)   
+      res.status(200).send(insertStatus);
   }catch(e){
     // assume 121 as schema validation error
-    if(e.code === 121){   
-      console.log(constructSchemaError(e));
-     // res.status(400).send(constructSchemaError(e));  
-    }
+    console.log("employee creation error", e);
+    
+  if (error.code === 11000) {
+      console.error('Duplicate employeeID detected:', error.keyValue.employeeID);
+      res.status(500).send('Employee ID already exists. Please use a unique ID.');
+  }
+  if(e.code === 121){   
+    console.log(constructSchemaError(e));
+    res.status(400).send(constructSchemaError(e));  
+  }
       
   }
 
@@ -58,4 +64,29 @@ const createFakeEmployees = async () => {
   }
 }
 
-module.exports = { getEmployeeDetails, setEmployeeDetails, createFakeEmployees };
+getFilterSearchEmployee = async (req, res) => {
+  // mock request
+  //body = {techStack: String, experience: number}
+  try{
+    // if(req.techStack){
+      //const response = await db.collection(collections.employee).find({techStack: {$elemMatch: {$eq: 'react'}}});
+      // $in if any of the techs should match (or)
+      // $all if all of tech stacks match (and)
+      const query = {$and: [{techStack: {$in: ['react', 'azure']}}, {experience: {$gt : 10}}, 
+      {name : {$regex: 'Loren', $options: 'i'}}]};
+      const response = await db.collection(collections.employee).find(query);      
+      const data =  await response.toArray();
+      console.log("find employee response", data);
+      console.log("find employee response length", data.length);
+      //res.status(200).send(data);
+    //}
+  }catch(e){
+    console.error(e);
+     //res.status(500).send(e);
+  } 
+}
+
+
+
+
+module.exports = { getEmployeeDetails, setEmployeeDetails, createFakeEmployees, getFilterSearchEmployee };

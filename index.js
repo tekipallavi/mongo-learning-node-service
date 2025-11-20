@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 let app = express();
-const {createFakeEmployees, setEmployeeDetails} = require('./src/controllers/employee.controller.js')
+const {createFakeEmployees, setEmployeeDetails, createEmployeeIndex, getFilterSearchEmployee} = require('./src/controllers/employee.controller.js')
 
 const employeeRoutes = require("./src/routes/employee.routes.js");
 const employeeRoutesV2 = require("./src-v2/routes/employee.routes.js");
@@ -35,12 +35,9 @@ loadService = () => {
   
   app.use('/project', projectRoutes);
 
-  // testing
-  // setEmployeeDetails({body:{
-  //   name: 'Pallavi',
-  //   techStack: 'tech',
-  //   experience: 5
-  // }});
+  // test
+  getFilterSearchEmployee()
+  
 }
 
 app.listen(process.env.PORT || 3001, () => {
