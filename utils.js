@@ -6,7 +6,8 @@ const generateUUID = () => {
 
 const collections = {
     employee: 'employees',
-    project: 'Project'
+    project: 'Project',
+    interest: 'Interest'
 }
 
 const constructSchemaError = (e) => {

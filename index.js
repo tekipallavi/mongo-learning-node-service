@@ -11,11 +11,13 @@ const {
   createProjects,
   countProjectDocuments, getProjects, updateProjectDetails
 } = require("./src/controllers/project.controller.js");
+const {createInterest} = require("./src/controllers/interest.contoller.js");
+
 
 const employeeRoutes = require("./src/routes/employee.routes.js");
 const employeeRoutesV2 = require("./src-v2/routes/employee.routes.js");
-
 const projectRoutes = require("./src/routes/project.routes.js");
+const interestRoutes = require("./src/routes/interest.routes.js");
 
 async function startDb() {
   try {
@@ -40,9 +42,10 @@ loadService = async () => {
   app.use("/employee-v2", employeeRoutesV2);
 
   app.use("/project", projectRoutes);
+  app.use('/interest', interestRoutes)
 
   // test
-  updateProjectDetails();
+  createInterest('ce022cad-974a-447d-ae53-75daeb7c71bf', 'f837eb08-9939-4b05-b297-628296bf02ce');
 };
 
 app.listen(process.env.PORT || 3001, () => {
