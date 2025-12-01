@@ -11,7 +11,7 @@ const {
   createProjects,
   countProjectDocuments, getProjects, updateProjectDetails
 } = require("./src/controllers/project.controller.js");
-const {createInterest} = require("./src/controllers/interest.contoller.js");
+const {createInterest, getInterestsForEmployee} = require("./src/controllers/interest.contoller.js");
 
 
 const employeeRoutes = require("./src/routes/employee.routes.js");
@@ -45,7 +45,8 @@ loadService = async () => {
   app.use('/interest', interestRoutes)
 
   // test
-  createInterest('ce022cad-974a-447d-ae53-75daeb7c71bf', 'f837eb08-9939-4b05-b297-628296bf02ce');
+  //createInterest('00eaa738-c7a7-4d95-97fe-dd863766ae11', 'f837eb08-9939-4b05-b297-628296bf02ce');
+  getInterestsForEmployee('f837eb08-9939-4b05-b297-628296bf02ce');
 };
 
 app.listen(process.env.PORT || 3001, () => {
