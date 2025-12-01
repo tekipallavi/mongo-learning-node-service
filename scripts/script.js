@@ -1,7 +1,7 @@
 const { create } = require("migrate-mongo");
 const { client } = require("../db/db.connection");
 const { listAllCollections } = require("./utils");
-const { createProject } = require("./project-script");
+const { createProject, createProjectColMod, checkUser, changeUserRole } = require("./project-script");
 const { createEmployeesCollection } = require("./employee-scripts");
 const { createVersionsCollection } = require("./version-scripts");
 const { createProposal } = require("./proposal-script");
@@ -15,7 +15,10 @@ const executeScript = () => {
   // createProject();
   // createProposal();
   //createInterest();
-  createEmployeesCollection();
+  //createEmployeesCollection();
+  createProjectColMod();
+  //checkUser();
+  //changeUserRole();
 };
 
 getConnection();
