@@ -6,18 +6,28 @@ let app = express();
 const {
   createFakeEmployees,
   setEmployeeDetails,
- createEmployeeIndex, getFilterSearchEmployee} = require("./src/controllers/employee.controller.js");
+  createEmployeeIndex,
+  getFilterSearchEmployee,
+} = require("./src/controllers/employee.controller.js");
 const {
   createProjects,
-  countProjectDocuments, getProjects, updateProjectDetails
+  countProjectDocuments,
+  getProjects,
+  updateProjectDetails,
 } = require("./src/controllers/project.controller.js");
-const {createInterest, getInterestsForEmployee} = require("./src/controllers/interest.contoller.js");
-
+const {
+  createInterest,
+  getInterestsForEmployee,
+} = require("./src/controllers/interest.contoller.js");
 
 const employeeRoutes = require("./src/routes/employee.routes.js");
-const employeeRoutesV2 = require("./src-v2/routes/employee.routes.js");
 const projectRoutes = require("./src/routes/project.routes.js");
 const interestRoutes = require("./src/routes/interest.routes.js");
+
+//V2 routes
+const employeeRoutesV2 = require("./src-v2/routes/employee.routes.js");
+const projectRoutesV2 = require("./src-v2/routes/project.routes.js");
+const interestRoutesV2 = require("./src-v2/routes/interest.routes.js");
 
 async function startDb() {
   try {
@@ -39,14 +49,16 @@ loadService = async () => {
   //add routes
 
   app.use("/employee", employeeRoutes);
-  app.use("/employee-v2", employeeRoutesV2);
-
   app.use("/project", projectRoutes);
-  app.use('/interest', interestRoutes)
+  app.use("/interest", interestRoutes);
 
+  //V2 routes
+  app.use("/employee-v2", employeeRoutesV2);
+  app.use("/project-v2", projectRoutesV2);
+  app.use("/interest-v2", interestRoutesV2);
   // test
   //createInterest('00eaa738-c7a7-4d95-97fe-dd863766ae11', 'f837eb08-9939-4b05-b297-628296bf02ce');
-  getInterestsForEmployee('f837eb08-9939-4b05-b297-628296bf02ce');
+  //getInterestsForEmployee("f837eb08-9939-4b05-b297-628296bf02ce");
 };
 
 app.listen(process.env.PORT || 3001, () => {
