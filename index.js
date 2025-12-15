@@ -43,7 +43,10 @@ async function startDb() {
 startDb();
 loadService = async () => {
   app.use(bodyParser.json());
-  app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+  app.use(cors({
+  origin: 'http://localhost:5173', // or your dev origin
+  credentials: true
+}));
   app.use(express.json()); // To parse JSON request bodies
 
   //add routes

@@ -106,7 +106,7 @@ const getProjects = async (req, res) => {
   try {
     let techStack = [];
     if (req && req.body && req.body.techStack && req.body.techStack.length) {
-      techStack = req.body.techStack.split(",").map(tech => tech.trim());
+      techStack = req.body.techStack.map(tech => tech.trim());
     } else {
       techStack = ['react'];
     }
@@ -115,6 +115,7 @@ const getProjects = async (req, res) => {
     const query = techStack.length ? { techStack: { $in: techStack }, endDate: { $gt: new Date() } } : {};
     const response = await db.collection(collections.project).find(query).sort({ endDate: 1 }).skip(page * recordsPerPage).limit(recordsPerPage).toArray();
     console.log("Projects matching employee tech stack:", response);
+    res.status(200).json(response);
   } catch (e) {
     console.error("Error fetching projects:", e);
   }

@@ -37,7 +37,8 @@ const setEmployeeDetails = async (req, res) => {
 };
 
 const getEmployeeDetails = async (req, res) => {
-  res.send("Working");
+  const employeee = await db.collection(collections.employee).findOne({employeeID: req.params.id});
+  res.status(200).send(employeee);
 }
 
 const createFakeEmployees = async () => {  
