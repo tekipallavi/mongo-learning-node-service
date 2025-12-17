@@ -20,6 +20,7 @@ const {
 const {
   createInterest,
   getInterestsForEmployee,
+  generateInterestsForRandomEmployees
 } = require("./src/controllers/interest.contoller.js");
 
 const employeeRoutes = require("./src/routes/employee.routes.js");
@@ -64,7 +65,7 @@ loadService = async () => {
   // test
   //createInterest('00eaa738-c7a7-4d95-97fe-dd863766ae11', 'f837eb08-9939-4b05-b297-628296bf02ce');
   //getInterestsForEmployee("f837eb08-9939-4b05-b297-628296bf02ce");
-  console.log("employee*************************", await getRandomEmployeeIds());
+  generateInterestsForRandomEmployees();
 
   getRandomProjects();
 };

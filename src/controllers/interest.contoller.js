@@ -1,5 +1,8 @@
 const { client, db } = require('../../db/db.connection');
 const { collections } = require('../../utils');
+const  { getRandomEmployeeIds } = require('./employee.controller');
+const { getRandomProjects } = require('./project.controller');
+const { faker}  = require('@faker-js/faker');
 
 const createInterest = async (projectId, employeeId) => {
     const session = client.startSession();
@@ -52,4 +55,24 @@ const getInterestsForEmployee = async (employeeId) => {
     console.log("aggregated interests", results);
 }
 
-module.exports = { createInterest, getInterestsForEmployee }
+
+
+generateInterestsForRandomEmployees = async () => {
+  // I will give set of project Ids - now the employee can make interests for multiple projects but he cannot make interest for the same project again.
+  try{
+    const employeeIds = await getRandomEmployeeIds();
+  const projectIds = await getRandomProjects();
+    for(const empId of employeeIds){
+        // I need random count between 10 to 15
+        const interestedProjectsCount = Math.floor(Math.random() * (15 - 10 + 1)) + 10;
+        const selectedProjectIds = faker.helpers.arrayElements(projectIds, interestedProjectsCount);
+        for(const projId of selectedProjectIds){
+            await createInterest(projId, empId);
+        }  
+    }
+  }catch(e){
+    console.error("error generating interests for random employees", e);
+  }
+  
+}
+module.exports = { createInterest, getInterestsForEmployee, generateInterestsForRandomEmployees }
