@@ -8,6 +8,7 @@ const {
   setEmployeeDetails,
   createEmployeeIndex,
   getFilterSearchEmployee,
+  getRandomEmployeeIds
 } = require("./src/controllers/employee.controller.js");
 const {
   createProjects,
@@ -62,6 +63,7 @@ loadService = async () => {
   // test
   //createInterest('00eaa738-c7a7-4d95-97fe-dd863766ae11', 'f837eb08-9939-4b05-b297-628296bf02ce');
   //getInterestsForEmployee("f837eb08-9939-4b05-b297-628296bf02ce");
+  console.log("employee*************************", await getRandomEmployeeIds());
 };
 
 app.listen(process.env.PORT || 3001, () => {

@@ -88,6 +88,25 @@ getFilterSearchEmployee = async (req, res) => {
 }
 
 
+getRandomEmployeeIds = async () => {
+  try{
+    const response = await db.collection(collections.employee).aggregate([{ $sample: { size: 59 } }, { $project: { employeeID: 1, _id: 0 } }]);
+    const data =  await response.toArray();
+    const employeeIds = data.map(emp => emp.employeeID);
+    return employeeIds;
+  }catch{
+    return [];
+  }
+}
 
+generateInterestsForRandomEmployees = async () => {
+  // I will give set of project Ids - now the employee can make interests for multiple projects but he cannot make interest for the same project again.
+  const employeeIds = await getRandomEmployeeIds();
+  console.log("employee ids for interests", employeeIds);
+  const projectId = '00eaa738-c7a7-4d95-97fe-dd863766ae11'; // sample project id
+  for(const empId of employeeIds){
+    await createInterest(projectId, empId);
+  }
+}
 
-module.exports = { getEmployeeDetails, setEmployeeDetails, createFakeEmployees, getFilterSearchEmployee };
+module.exports = { getEmployeeDetails, setEmployeeDetails, createFakeEmployees, getFilterSearchEmployee, getRandomEmployeeIds };

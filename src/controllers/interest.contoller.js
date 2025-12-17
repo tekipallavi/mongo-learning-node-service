@@ -51,4 +51,5 @@ const getInterestsForEmployee = async (employeeId) => {
     let results = await interests.toArray();
     console.log("aggregated interests", results);
 }
+
 module.exports = { createInterest, getInterestsForEmployee }
