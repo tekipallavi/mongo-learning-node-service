@@ -1,0 +1,98 @@
+Complex MongoDB Queries - Practice Problems
+Based on your RFP portal schema, here are practice queries for you to solve:
+
+1. Multi-Stage Aggregation: Employee Performance Metrics
+Find employees with 3+ years experience and calculate:
+
+How many projects they've shown interest in
+Success rate (accepted interests / total interests)
+Average tech stack overlap with projects they're interested in
+Operators to practice: $lookup, $addFields, $size, $filter, $divide, $cond
+
+2. Transaction: Create Interest with Validation
+Write a transaction that:
+
+Validates employee and project both exist
+Checks if employee has at least one matching tech with project
+Creates an interest document
+Updates both project and employee collections atomically
+Operators to practice: Transaction session, $addToSet, error handling
+
+3. Complex Aggregation: Projects Ending Soon with Bottlenecks
+Find projects ending within next 3 months where:
+
+They still have pending (open) interests that haven't been selected
+Calculate days remaining
+Count interests at each stage (open, selected, rejected)
+Calculate conversion rate from open to selected interests
+Operators to practice: $lookup, $match, $addFields, $filter, $size, $divide, $subtract
+
+4. Transaction: Bulk Accept Multiple Interests
+Write a transaction that:
+
+Accepts multiple interests for a single project
+Updates interest collection to mark them as "selected"
+Adds employees to project's selectedInterests array
+Updates each employee's status
+Operators to practice: $set, $addToSet, $in, updateMany, transaction rollback on error
+
+5. Aggregation: Tech Stack Supply-Demand Analysis
+Analyze:
+
+Which tech stacks are most demanded (count across all projects)
+Which tech stacks have most employee supply (count across all employees)
+Calculate supply-demand ratio for each tech
+Average experience required vs available for each tech
+Operators to practice: $unwind, $group, $sum, $avg, $map or custom logic
+
+6. Complex Query: Rank Employees for Specific Project
+For a given projectId:
+
+Find all employees with matching tech stacks
+Calculate match percentage (matching techs / required techs)
+Get their interest history stats
+Calculate a suitability score based on:
+50% weight: tech match percentage
+30% weight: years of experience
+20% weight: interest acceptance rate
+Operators to practice: $filter, $in, $lookup, $group, $round, $multiply, $add, $sort
+
+7. Transaction: Submit Proposal with Multi-Step Validation
+Write a transaction that:
+
+Verifies the employee has an accepted interest for the project
+Validates tech stack is subset of project tech stack
+Ensures no duplicate proposal from same employee
+Creates proposal atomically
+Updates project and employee proposal arrays
+Handles all validation failures
+Operators to practice: Multiple findOne calls, validation logic, $addToSet, transaction semantics
+
+8. Aggregation: Interest Conversion Funnel
+Show all projects with:
+
+Total interests received
+Breakdown: open, selected, rejected counts
+Conversion rate: open → selected
+Conversion rate: selected → proposals submitted
+Rank by highest conversion potential
+Operators to practice: $lookup, $filter, $size, $cond, $divide, $round, $group (optional), $sort
+
+9. Complex Query: Find Underutilized Employees
+Find employees who:
+
+Have shown interest in 5+ projects but have 0 or 1 accepted interests
+Calculate their "reach" (interests shown) vs "conversion" (interests accepted)
+Calculate tech stack alignment score with their interests
+Suggest areas for improvement
+Operators to practice: $match, $lookup, $size, $filter, $lte, $gte, $avg
+
+10. Transaction: Reject Interest and Cascade Updates
+Write a transaction that:
+
+Rejects an interest
+If it was the only selected interest for that employee on that project, log it
+Update project's interest status
+Update employee records
+Maintain data consistency across collections
+Operators to practice: $pull, $set, $inc, transaction with conditional updates
