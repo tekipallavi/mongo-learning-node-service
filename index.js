@@ -15,6 +15,7 @@ const {
   countProjectDocuments,
   getProjects,
   updateProjectDetails,
+  getRandomProjects
 } = require("./src/controllers/project.controller.js");
 const {
   createInterest,
@@ -64,6 +65,8 @@ loadService = async () => {
   //createInterest('00eaa738-c7a7-4d95-97fe-dd863766ae11', 'f837eb08-9939-4b05-b297-628296bf02ce');
   //getInterestsForEmployee("f837eb08-9939-4b05-b297-628296bf02ce");
   console.log("employee*************************", await getRandomEmployeeIds());
+
+  getRandomProjects();
 };
 
 app.listen(process.env.PORT || 3001, () => {

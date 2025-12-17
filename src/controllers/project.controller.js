@@ -155,11 +155,31 @@ const updateProjectDetails = async (req, res) => {
   console.log("Projects updated:", result.modifiedCount);
 };
 
+const getRandomProjects = async (count = 500) => {
+  try {
+    const pipeline = [
+      { $match: { endDate: { $gt: new Date() } } }, // only active projects
+      { $sample: { size: count } },
+      { $project: {
+          projectId: 1, _id:0
+      }}    ];
+    const projectsCursor = db.collection(collections.project).aggregate(pipeline);
+    const projects = (await projectsCursor.toArray()).map(doc => doc.projectId);
+    console.log(`Random ${count} active projects:`, projects);
+    return projects;
+  }
+ catch (e) {
+    console.error("Error fetching random projects:", e);
+    throw e;
+  }
+}
+
 module.exports = {
   setProjectDetails,
   getProjectDetails,
   createFakeProjects,
   countProjectDocuments,
   getProjects,
-  updateProjectDetails
+  updateProjectDetails,
+  getRandomProjects
 };
