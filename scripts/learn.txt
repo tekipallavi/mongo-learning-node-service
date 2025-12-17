@@ -1,0 +1,579 @@
+1. Multi-Stage Aggregation: Find Top Employees by Matching Projects
+Find employees with their matching projects, count of interests, and proposal success rate.
+
+const getEmployeeProjectMatchingStats = async () => {
+  const result = await db.collection(collections.employee).aggregate([
+    {
+      $match: { experience: { $gte: 5 } }
+    },
+    {
+      $lookup: {
+        from: collections.interest,
+        localField: 'employeeID',
+        foreignField: 'employeeId',
+        as: 'employeeInterests'
+      }
+    },
+    {
+      $lookup: {
+        from: collections.project,
+        let: { interestIds: '$employeeInterests.projectId' },
+        pipeline: [
+          { $match: { $expr: { $in: ['$projectId', '$$interestIds'] } } },
+          { $project: { projectName: 1, techStack: 1, endDate: 1 } }
+        ],
+        as: 'matchedProjects'
+      }
+    },
+    {
+      $addFields: {
+        interestCount: { $size: '$employeeInterests' },
+        matchedProjectCount: { $size: '$matchedProjects' },
+        proposalCount: { $size: '$proposals' },
+        successRate: {
+          $cond: [
+            { $eq: ['$proposals', []] },
+            0,
+            { $divide: [{ $size: '$proposals' }, { $size: '$employeeInterests' }] }
+          ]
+        }
+      }
+    },
+    {
+      $sort: { interestCount: -1, experience: -1 }
+    },
+    {
+      $limit: 10
+    }
+  ]).toArray();
+  
+  console.log("Employee Project Matching Stats:", result);
+  return result;
+};
+
+
+
+2. Transaction: Create Interest with Cascading Updates
+Create an interest and update both employee and project collections atomically.
+
+const createInterestWithTransaction = async (projectId, employeeId) => {
+  const session = client.startSession();
+  
+  try {
+    await session.withTransaction(async () => {
+      // Step 1: Verify employee and project exist
+      const employee = await db.collection(collections.employee)
+        .findOne({ employeeID: employeeId }, { session });
+      const project = await db.collection(collections.project)
+        .findOne({ projectId }, { session });
+      
+      if (!employee || !project) {
+        throw new Error('Employee or Project not found');
+      }
+      
+      // Step 2: Verify tech stack match (at least one common tech)
+      const commonTechs = employee.techStack.filter(tech => 
+        project.techStack.includes(tech)
+      );
+      
+      if (commonTechs.length === 0) {
+        throw new Error('No matching tech stack between employee and project');
+      }
+      
+      // Step 3: Insert interest
+      const interestId = `INT/${projectId}/${employeeId}`;
+      await db.collection(collections.interest).insertOne(
+        {
+          projectId,
+          employeeId,
+          statusId: 1, // open
+          timestamp: new Date(),
+          matchingTechs: commonTechs
+        },
+        { session }
+      );
+      
+      // Step 4: Update project - add to interests array
+      await db.collection(collections.project).updateOne(
+        { projectId },
+        { $addToSet: { interests: employeeId } },
+        { session }
+      );
+      
+      // Step 5: Update employee - add to interests array
+      await db.collection(collections.employee).updateOne(
+        { employeeID: employeeId },
+        { $addToSet: { interests: projectId } },
+        { session }
+      );
+      
+      console.log(`Interest created successfully: ${interestId}`);
+    });
+  } catch (error) {
+    console.error('Transaction failed:', error.message);
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+};
+
+3. Complex Aggregation: Projects Near End Date with Pending Interests
+Find projects ending within 6 months with pending interests that haven't been selected yet.
+
+const getProjectsNearEndWithPendingInterests = async () => {
+  const sixMonthsFromNow = new Date();
+  sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+  
+  const result = await db.collection(collections.project).aggregate([
+    {
+      $match: {
+        endDate: {
+          $gte: new Date(),
+          $lte: sixMonthsFromNow
+        },
+        statusId: { $in: [1, 2] } // open for interests or open for proposals
+      }
+    },
+    {
+      $lookup: {
+        from: collections.interest,
+        localField: 'projectId',
+        foreignField: 'projectId',
+        as: 'allInterests'
+      }
+    },
+    {
+      $addFields: {
+        pendingInterests: {
+          $filter: {
+            input: '$allInterests',
+            as: 'interest',
+            cond: { $eq: ['$$interest.statusId', 1] } // status = open
+          }
+        },
+        selectedInterestCount: { $size: '$selectedInterests' },
+        totalInterestCount: { $size: '$allInterests' }
+      }
+    },
+    {
+      $match: {
+        'pendingInterests.0': { $exists: true } // has at least one pending interest
+      }
+    },
+    {
+      $project: {
+        projectName: 1,
+        clientName: 1,
+        techStack: 1,
+        endDate: 1,
+        daysUntilEnd: {
+          $divide: [
+            { $subtract: ['$endDate', new Date()] },
+            1000 * 60 * 60 * 24 // convert ms to days
+          ]
+        },
+        pendingInterestCount: { $size: '$pendingInterests' },
+        selectedInterestCount: 1,
+        totalInterestCount: 1,
+        interestConversionRate: {
+          $round: [
+            { $multiply: [
+              { $divide: ['$selectedInterestCount', '$totalInterestCount'] },
+              100
+            ]},
+            2
+          ]
+        }
+      }
+    },
+    {
+      $sort: { daysUntilEnd: 1 }
+    }
+  ]).toArray();
+  
+  console.log("Projects near end with pending interests:", result);
+  return result;
+};
+
+4. Transaction: Accept Interest and Update Multiple Collections
+Accept multiple interests for a project and mark them as selected across all collections.
+
+const acceptInterestsForProject = async (projectId, employeeIdsToAccept) => {
+  const session = client.startSession();
+  
+  try {
+    await session.withTransaction(async () => {
+      // Verify project exists
+      const project = await db.collection(collections.project)
+        .findOne({ projectId }, { session });
+      
+      if (!project) {
+        throw new Error('Project not found');
+      }
+      
+      // Update interests to selected status
+      await db.collection(collections.interest).updateMany(
+        {
+          projectId,
+          employeeId: { $in: employeeIdsToAccept },
+          statusId: 1 // only update open interests
+        },
+        { $set: { statusId: 2 } }, // 2 = selected
+        { session }
+      );
+      
+      // Add to project's selectedInterests
+      await db.collection(collections.project).updateOne(
+        { projectId },
+        { $addToSet: { selectedInterests: { $each: employeeIdsToAccept } } },
+        { session }
+      );
+      
+      // Update each employee's interests status
+      for (const employeeId of employeeIdsToAccept) {
+        await db.collection(collections.employee).updateOne(
+          { employeeID: employeeId },
+          { $addToSet: { acceptedInterests: projectId } },
+          { session }
+        );
+      }
+      
+      console.log(`Accepted ${employeeIdsToAccept.length} interests for project ${projectId}`);
+    });
+  } catch (error) {
+    console.error('Transaction failed:', error.message);
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+};
+
+5. Aggregation: Employee Skills Demand Analysis
+Analyze which tech stacks are most in-demand across all projects and compare with employee expertise
+
+const getTechStackDemandAnalysis = async () => {
+  const result = await db.collection(collections.project).aggregate([
+    {
+      $match: { statusId: { $in: [1, 2, 3] } } // active projects
+    },
+    {
+      $unwind: '$techStack'
+    },
+    {
+      $group: {
+        _id: '$techStack',
+        projectCount: { $sum: 1 },
+        avgExperience: { $avg: '$experience' },
+        projects: { $push: '$$ROOT' }
+      }
+    },
+    {
+      $sort: { projectCount: -1 }
+    }
+  ]).toArray();
+  
+  // Compare with employee capabilities
+  const employeeTechStats = await db.collection(collections.employee).aggregate([
+    {
+      $unwind: '$techStack'
+    },
+    {
+      $group: {
+        _id: '$techStack',
+        employeeCount: { $sum: 1 },
+        avgExperience: { $avg: '$experience' }
+      }
+    }
+  ]).toArray();
+  
+  // Combine results
+  const analysis = result.map(tech => {
+    const employeeSupply = employeeTechStats.find(e => e._id === tech._id);
+    return {
+      techStack: tech._id,
+      demand: tech.projectCount,
+      supply: employeeSupply?.employeeCount || 0,
+      supplyDemandRatio: (employeeSupply?.employeeCount || 0) / tech.projectCount,
+      avgProjectExperience: tech.avgExperience,
+      avgEmployeeExperience: employeeSupply?.avgExperience || 0
+    };
+  });
+  
+  console.log("Tech Stack Demand Analysis:", analysis);
+  return analysis;
+};
+
+6. Complex Query: Find Employees Suitable for Project
+Find employees who match project requirements with ranking based on experience and interest history.
+
+const findSuitableEmployeesForProject = async (projectId) => {
+  const project = await db.collection(collections.project)
+    .findOne({ projectId });
+  
+  if (!project) throw new Error('Project not found');
+  
+  const result = await db.collection(collections.employee).aggregate([
+    {
+      $addFields: {
+        matchingTechs: {
+          $filter: {
+            input: '$techStack',
+            as: 'empTech',
+            cond: { $in: ['$$empTech', project.techStack] }
+          }
+        },
+        matchPercentage: {
+          $round: [
+            { $multiply: [
+              { $divide: [
+                { $size: {
+                  $filter: {
+                    input: '$techStack',
+                    as: 'empTech',
+                    cond: { $in: ['$$empTech', project.techStack] }
+                  }
+                }},
+                { $size: project.techStack }
+              ]},
+              100
+            ]},
+            2
+          ]
+        }
+      }
+    },
+    {
+      $match: {
+        'matchingTechs.0': { $exists: true } // at least one matching tech
+      }
+    },
+    {
+      $lookup: {
+        from: collections.interest,
+        let: { empId: '$employeeID' },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$employeeId', '$$empId'] } } },
+          { $group: { 
+              _id: null, 
+              totalInterests: { $sum: 1 },
+              acceptedInterests: {
+                $sum: { $cond: [{ $eq: ['$statusId', 2] }, 1, 0] }
+              }
+            }
+          }
+        ],
+        as: 'interestStats'
+      }
+    },
+    {
+      $addFields: {
+        totalInterests: { $arrayElemAt: ['$interestStats.totalInterests', 0] },
+        acceptedInterests: { $arrayElemAt: ['$interestStats.acceptedInterests', 0] },
+        interestAcceptanceRate: {
+          $round: [
+            { $multiply: [
+              { $divide: [
+                { $arrayElemAt: ['$interestStats.acceptedInterests', 0] },
+                { $arrayElemAt: ['$interestStats.totalInterests', 0] }
+              ]},
+              100
+            ]},
+            2
+          ]
+        }
+      }
+    },
+    {
+      $addFields: {
+        suitabilityScore: {
+          $add: [
+            { $multiply: ['$matchPercentage', 0.5] }, // 50% weight to tech match
+            { $multiply: ['$experience', 2] }, // 2 points per year of experience
+            { $cond: [
+              { $eq: ['$interestAcceptanceRate', null] }, 
+              0,
+              { $multiply: ['$interestAcceptanceRate', 0.3] } // 30% weight to acceptance rate
+            ]}
+          ]
+        }
+      }
+    },
+    {
+      $sort: { suitabilityScore: -1 }
+    },
+    {
+      $project: {
+        name: 1,
+        experience: 1,
+        techStack: 1,
+        matchingTechs: 1,
+        matchPercentage: 1,
+        totalInterests: 1,
+        acceptedInterests: 1,
+        interestAcceptanceRate: 1,
+        suitabilityScore: 1
+      }
+    }
+  ]).toArray();
+  
+  console.log(`Suitable employees for project ${projectId}:`, result);
+  return result;
+};
+
+
+7. Transaction: Submit Proposal with Validation
+Submit a proposal with multi-step validation and atomic updates.
+
+const submitProposal = async (proposalData) => {
+  const { proposalId, projectId, employeeId, techStack, versions } = proposalData;
+  const session = client.startSession();
+  
+  try {
+    await session.withTransaction(async () => {
+      // Step 1: Verify interest is accepted
+      const interest = await db.collection(collections.interest).findOne(
+        { projectId, employeeId, statusId: 2 }, // 2 = selected
+        { session }
+      );
+      
+      if (!interest) {
+        throw new Error('Employee has no accepted interest for this project');
+      }
+      
+      // Step 2: Verify project exists and get details
+      const project = await db.collection(collections.project).findOne(
+        { projectId },
+        { session }
+      );
+      
+      if (!project) {
+        throw new Error('Project not found');
+      }
+      
+      // Step 3: Verify tech stack is subset of project tech stack
+      const isSubset = techStack.every(tech => project.techStack.includes(tech));
+      if (!isSubset) {
+        throw new Error('Proposal tech stack is not a subset of project tech stack');
+      }
+      
+      // Step 4: Check for duplicate proposal from same employee
+      const existingProposal = await db.collection('Proposal').findOne(
+        { projectId, employeeId },
+        { session }
+      );
+      
+      if (existingProposal) {
+        throw new Error('Employee has already submitted a proposal for this project');
+      }
+      
+      // Step 5: Create proposal
+      await db.collection('Proposal').insertOne(
+        {
+          proposalId,
+          projectId,
+          projectName: project.projectName,
+          employeeId,
+          techStack,
+          submittedDate: new Date(),
+          statusId: 1, // open
+          versions,
+          comments: []
+        },
+        { session }
+      );
+      
+      // Step 6: Update project proposals array
+      await db.collection(collections.project).updateOne(
+        { projectId },
+        { $addToSet: { proposals: proposalId } },
+        { session }
+      );
+      
+      // Step 7: Update employee proposals array
+      await db.collection(collections.employee).updateOne(
+        { employeeID: employeeId },
+        { $addToSet: { proposals: proposalId } },
+        { session }
+      );
+      
+      console.log(`Proposal ${proposalId} submitted successfully`);
+    });
+  } catch (error) {
+    console.error('Transaction failed:', error.message);
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+};
+
+8. Aggregation: Project Pipeline with Conditional Logic
+Complex pipeline showing projects with interest funnel analysis.
+const getProjectInterestFunnel = async () => {
+  return await db.collection(collections.project).aggregate([
+    {
+      $match: { statusId: { $in: [1, 2, 3] } }
+    },
+    {
+      $lookup: {
+        from: collections.interest,
+        localField: 'projectId',
+        foreignField: 'projectId',
+        as: 'interests'
+      }
+    },
+    {
+      $addFields: {
+        totalInterests: { $size: '$interests' },
+        openInterests: {
+          $size: {
+            $filter: {
+              input: '$interests',
+              as: 'interest',
+              cond: { $eq: ['$$interest.statusId', 1] }
+            }
+          }
+        },
+        selectedInterests: {
+          $size: {
+            $filter: {
+              input: '$interests',
+              as: 'interest',
+              cond: { $eq: ['$$interest.statusId', 2] }
+            }
+          }
+        },
+        rejectedInterests: {
+          $size: {
+            $filter: {
+              input: '$interests',
+              as: 'interest',
+              cond: { $eq: ['$$interest.statusId', 3] }
+            }
+          }
+        }
+      }
+    },
+    {
+      $addFields: {
+        openToSelectedConversion: {
+          $cond: [
+            { $eq: ['$openInterests', 0] },
+            0,
+            { $round: [{ $multiply: [{ $divide: ['$selectedInterests', '$openInterests'] }, 100] }, 2] }
+          ]
+        },
+        proposalCount: { $size: '$proposals' },
+        conversionToProposal: {
+          $cond: [
+            { $eq: ['$selectedInterests', 0] },
+            0,
+            { $round: [{ $multiply: [{ $divide: ['$proposalCount', '$selectedInterests'] }, 100] }, 2] }
+          ]
+        }
+      }
+    },
+    {
+      $sort: { totalInterests: -1 }
+    }
+  ]).toArray();
+};
