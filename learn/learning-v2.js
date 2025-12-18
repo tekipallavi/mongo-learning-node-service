@@ -11,7 +11,6 @@ const empPerformMetricsv2_me = async () => {
     try {
         const result = await db.collection(collections.employee).aggregate([
             { $match: { experience: { $gte: 3 } } },
-            { $addFields: { projectIntrestsCount: { $size: "$interests" } } },
             {
                 $lookup:
                 {
