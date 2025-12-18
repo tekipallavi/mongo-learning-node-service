@@ -23,6 +23,7 @@ const {
   generateInterestsForRandomEmployees
 } = require("./src/controllers/interest.contoller.js");
 const { empPerformMetrics }  = require('./learn/learning.js');
+const { empPerformMetricsv2 }  = require('./learn/learning-v2.js');
 
 
 const employeeRoutes = require("./src/routes/employee.routes.js");
@@ -67,7 +68,8 @@ loadService = async () => {
   // test
   //createInterest('00eaa738-c7a7-4d95-97fe-dd863766ae11', 'f837eb08-9939-4b05-b297-628296bf02ce');
   //getInterestsForEmployee("f837eb08-9939-4b05-b297-628296bf02ce");
-  empPerformMetrics();
+  //empPerformMetrics();
+  empPerformMetricsv2();
 };
 
 app.listen(process.env.PORT || 3001, () => {

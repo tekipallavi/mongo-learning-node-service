@@ -96,3 +96,58 @@ Update project's interest status
 Update employee records
 Maintain data consistency across collections
 Operators to practice: $pull, $set, $inc, transaction with conditional updates
+
+
+Updating the todo list to record "queries-only" output, then I'll list the queries.
+
+Created 5 todos
+
+Progress: todo updated — now listing only the queries (no solutions).
+
+**Transactions**
+- Transaction 1: Atomically create an interest — verify `employees.employeeId` and `projects.projectId` exist; insert into `interests`, add `employeeId` to `projects.interests` and `projectId` to `employees.interests`.
+- Transaction 2: Atomically accept an interest — set interest `status` to accepted, add `employeeId` to `projects.selectedInterests`, and record an audit doc in `notifications` (or `activity`).
+- Transaction 3: Atomically submit a proposal only if interest `status` is accepted — insert into `proposals`, push `proposalId` to `projects.proposals` and `employees.proposals`, and insert initial `versions` doc.
+
+**Aggregations — matching / intersections / set operations**
+- Agg 1: Given an `employeeId`, find all proposals whose `techStack` overlaps with that employee's `techStack`, return overlap count and rank by overlap.
+- Agg 2: For each `project`, compute counts of proposals grouped by `statusId`, plus percentage share per status (include projects with zero proposals).
+- Agg 3: For each `employee`, list interested projects and compute `matchCount` = size of `$setIntersection` between employee `techStack` and project `techStack`, sort projects by `matchCount`.
+- Agg 4: Find proposals where `techStack` is NOT a subset of the parent project's `techStack` (data-integrity check using `$expr` / `$setIsSubset`).
+- Agg 5: For `proposals`, unwind `techStack` and return top 10 most-used techs with distinct project and employee counts.
+- Agg 6: Attach the latest version info to each `proposal` by looking up `versions` and picking the most recent (`timestamp`).
+- Agg 7: For each `project`, compute average `Experience` of employees who have shown interest (join `interests` → `employees` and average `Experience`), skip nulls.
+- Agg 8: Return for a given `projectId` a timeline: daily counts of proposals submitted over the last 90 days (date bucketing).
+
+**Aggregations — multi-stage / analytics**
+- Agg 9: Multi-facet dashboard from `proposals`: facet into `byStatus`, `topTechs`, and `recentSubmissions` using `$facet`.
+- Agg 10: Compute for each employee a “match score” across all projects they are interested in: sum of matchCounts normalized by project tech-stack size — return top N employees.
+- Agg 11: Using `$graphLookup`, build a co-submission graph: starting from an `employeeId`, find other employees who submitted proposals to the same projects (depth 2), and output the connected employees with counts of shared projects.
+- Agg 12: Use `$bucket` or `$bucketAuto` to bucket projects by number of proposals and show distribution.
+
+**Complex updates & operators**
+- Update 1: Add a version tag (e.g., `v2`) to a `proposal` only if not present using an update pipeline and `$cond` / `$concatArrays` or `$addToSet` semantics.
+- Update 2: Update a nested interest object inside `projects.interestsDetails` using `arrayFilters` to change status and add `acceptedAt`.
+- Update 3: Conditionally set `projects.acceptedProposal` to a `proposalId` only if `projectStatus` equals a specific value and the `proposalId` exists in `projects.proposals` (use update pipeline with `$cond` and `$in`).
+- Update 4: Remove a `proposalId` from all `employees.proposals` arrays and from `projects.proposals` atomically (two updates inside a transaction).
+- Update 5: Promote a proposal's `statusId` to `selected` and increment a per-employee `selectedCount` using an `updateOne` with `$inc` and array positional operator.
+
+**Queries using expressions / server-side comparisons**
+- Expr 1: Find proposals where `submittedDate` is earlier than the earliest `version.timestamp` in `versions` (cross-collection validation via `$lookup` + `$expr`).
+- Expr 2: Find employees who have more `proposals` than `interests` using `$expr` (compare array sizes).
+
+**Indexing, explain, and performance tasks**
+- Perf 1: Create the indexes you think appropriate (multi-key on `techStack`, unique on `projectId`/`employeeId`, compound on `projectId,statusId`) and run `explain("executionStats")` for a heavy aggregation — report stages that are COLLSCAN vs INDEX SCAN.
+- Perf 2: Materialize a heavy `proposals` aggregation (top techs) into `reports.topTechs` using `$merge` and schedule re-run pattern (simulate with a pipeline).
+
+**Reporting / ETL style queries**
+- ETL 1: Build a pipeline that outputs for each `project` a denormalized doc: `projectId`, `projectName`, `topTechs`, `totalInterests`, `totalProposals`, `acceptedProposal`, and write to `reports.projects_summary` via `$merge`.
+- ETL 2: Generate a daily `reports.proposals_by_day` collection with counts per status (use `$group` by date and `$merge`).
+
+**Challenge problems (higher difficulty)**
+- C1: Write a transactional workflow that: (a) accepts an employee's interest, (b) creates a work-assignment doc in `assignments`, (c) deducts a quota counter on `employees` — all must commit or rollback.
+- C2: Design an aggregation that predicts candidate fit: for each `proposal`, compute a weighted score where certain techs have weights (weights stored in `configs.techWeights` collection) — join weights and compute dot-product-like score.
+- C3: Create a query that finds “stale” proposals: proposals whose latest version is older than 30 days and whose `statusId` is still `open`, then bulk-update them to `statusId: reviewed` with a comment, using an aggregation pipeline to produce the list and `updateMany` to apply change.
+- C4: Using `$lookup` and `$unwind` minimize data transferred: return top 5 projects where selected employees' average `Experience` is highest and all selected employees have at least one matching tech with the project.
+
+If you want, tell me which specific query number(s) you solved and I'll verify correctness when you share your solution.
