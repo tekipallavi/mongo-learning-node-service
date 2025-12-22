@@ -1,6 +1,6 @@
 const { db, client }= require('../db/db.connection');
 const { collections } = require('../utils');
-
+//Query - 1
 const empPerformMetrics = async () => {
     try{
     const result = await db.collection(collections.employee).aggregate([
@@ -43,6 +43,7 @@ const empPerformMetrics = async () => {
   
 }
 
+//Query -4 
 const selectInterests =  async () => {
     const projectId = '8cceacea-86e1-4c83-9f4e-48be6f781608';
     const session = client.startSession();
@@ -53,7 +54,8 @@ const selectInterests =  async () => {
             return interest.split('/')[2]
         });
         const selectedEmployeeIds = employeeIds.filter((e, i) => i <= employeeIds.length /2);
-        const projectResult = await db.collection(collections.project).updateOne({projectId}, {$set: {selectedInterests: selectedEmployeeIds}}, {session});
+        // employeeIds in selectedEmployees should be unique, so replaced $set to $addToSet
+        const projectResult = await db.collection(collections.project).updateOne({projectId}, {$addToSet: {selectedInterests: {$each:selectedEmployeeIds}}}, {session});
         const interestResult = await  db.collection(collections.interest).updateMany({projectId}, {$set: {statusId: 2}}, {session})
         const result = await session.commitTransaction();
         console.log("transaction result", result);        
