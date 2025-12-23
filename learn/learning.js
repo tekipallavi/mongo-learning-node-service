@@ -167,7 +167,7 @@ const query6 = async () => {
             {
                 $addFields: {
                     historyStats: {
-                        $divide: [{ $size: ['$selectedInterests'] }, { $cond: { if: { $gt: [{ $size: ['$interests'] }, 0] }, then : { $size: ['$interests'] }, else: 1 } }]
+                        $divide: [{ $size: ['$selectedInterests'] }, { $cond: { if: { $gt: [{ $size: ['$interests'] }, 0] }, then: { $size: ['$interests'] }, else: 1 } }]
                     }
                 }
             }
@@ -178,4 +178,73 @@ const query6 = async () => {
         console.error(e);
     }
 }
-module.exports = { empPerformMetrics, selectInterests, query3, query5, query6 }
+
+const query9 = async () => {
+    try {
+        const result = await db.collection(collections.employee).aggregate([
+            {
+                $match: {
+                    $expr: { $gte: [{ $size: ['$interests'] }, 5] }
+                }
+            },
+            {
+                $lookup: {
+                    from: collections.interest,
+                    let: { eid: '$employeeID' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ['$$eid', '$employeeId'] }
+                            }
+                        },
+                        {
+                            $facet: {
+                                selectedInterests: [
+                                    { $match: { statusId: 2 } },
+                                    {
+                                        $group: {
+                                            _id: null,
+                                            projectIds: { $addToSet: '$projectId' }
+                                        }
+                                    },
+
+                                    {
+                                        $project: { _id: 0, projectIds: 1 }
+                                    }
+                                ],
+
+                                allProjects: [
+                                    {
+                                        $group: {
+                                            _id: null,
+                                            projectIds: { $addToSet: '$projectId' }
+                                        }
+                                    },
+
+                                    {
+                                        $project: { _id: 0, projectIds: 1 }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            $project: {
+                                allProjectIds: { $ifNull: [{ $arrayElemAt: ['$allInterests.projectIds', 0] }, []] },  // Extract all projectIds (default to empty array if none)
+                                selectedProjectIds: { $ifNull: [{ $arrayElemAt: ['$selectedInterests.projectIds', 0] }, []] }  // Extract selected projectIds (default to empty array if none)
+                            }
+                        }
+
+                    ],
+                    as: 'interestSummary'
+                }
+            },
+            {
+                $match: { $expr: { $lte: [{ $size: ['$selectedInterests'] }, 1] } }
+            }
+        ]).toArray();
+        console.log(result)
+    } catch (e) {
+
+    }
+}
+module.exports = { empPerformMetrics, selectInterests, query3, query5, query6, query9 }
