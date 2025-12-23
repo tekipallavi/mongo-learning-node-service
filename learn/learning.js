@@ -115,7 +115,7 @@ const query5 = async () => {
             {
                 $group: {
                     _id: '$techStack',
-                    count: {$count: {}}
+                    count: { $count: {} }
                 }
             },
             {
@@ -125,11 +125,57 @@ const query5 = async () => {
                 $limit: 1
             }
             // check which techStack has max count without sorting
-                
+
         ]).toArray();
         console.log('result for query5', result)
     } catch (e) {
         console.log(e);
     }
 }
-module.exports = { empPerformMetrics, selectInterests, query3, query5}
+
+const query6 = async () => {
+    try {
+        const projectId = '8cceacea-86e1-4c83-9f4e-48be6f781608';
+        const requiredTechStacks = (await db.collection(collections.project).findOne({ projectId }))?.techStack || [];
+        const result = await db.collection(collections.employee).aggregate([
+            {
+                $match: { $expr: { $gt: [{ $size: { $setIntersection: ['$techStack', requiredTechStacks] } }, 0] } }
+            },
+            {
+                $addFields: {
+                    matchPercentage: {
+                        $divide: [
+                            { $size: { $setIntersection: ['$techStack', requiredTechStacks] } },
+                            { $size: [requiredTechStacks] }
+                        ]
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: collections.interest,
+                    let: { eid: '$employeeID', interests: '$interests' },
+                    pipeline: [
+                        {
+                            $match: { $and: [{ $expr: { $eq: ['$employeeId', '$$eid'] } }, { $expr: { $eq: ['$statusId', 2] } }] }
+                        }
+
+                    ],
+                    as: 'selectedInterests'
+                }
+            },
+            {
+                $addFields: {
+                    historyStats: {
+                        $divide: [{ $size: ['$selectedInterests'] }, { $cond: { if: { $gt: [{ $size: ['$interests'] }, 0] }, then : { $size: ['$interests'] }, else: 1 } }]
+                    }
+                }
+            }
+
+        ]).toArray();
+        console.log(result)
+    } catch (e) {
+        console.error(e);
+    }
+}
+module.exports = { empPerformMetrics, selectInterests, query3, query5, query6 }
