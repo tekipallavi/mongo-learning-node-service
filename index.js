@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 let app = express();
+const {generateJWTToken, authenticator: authenticationMiddleware, addTokenTORequest} = require("./src/middlewares/auth.js");
 const {
   createFakeEmployees,
   setEmployeeDetails,
@@ -54,6 +55,8 @@ loadService = async () => {
   credentials: true
 }));
   app.use(express.json()); // To parse JSON request bodies
+  app.use(addTokenTORequest);
+  app.use(authenticationMiddleware);
 
   //add routes
 
@@ -69,7 +72,7 @@ loadService = async () => {
   //createInterest('00eaa738-c7a7-4d95-97fe-dd863766ae11', 'f837eb08-9939-4b05-b297-628296bf02ce');
   //getInterestsForEmployee("f837eb08-9939-4b05-b297-628296bf02ce");
   //empPerformMetrics();
-  query9();
+  //query9();
 };
 
 app.listen(process.env.PORT || 3001, () => {

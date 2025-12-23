@@ -35,8 +35,8 @@ const setEmployeeDetails = async (req, res) => {
 
   
 };
-
-const getEmployeeDetails = async (req, res) => {
+const getEmployeeDetails = async (req, res, next ) => {
+  console.log(next);
   const employeee = await db.collection(collections.employee).findOne({employeeID: req.params.id});
   res.status(200).send(employeee);
 }
