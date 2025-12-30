@@ -41,7 +41,43 @@ const query1 = async () => {
                     }
                 }
             },
-            {$project: {'projectId':1, 'employeeId':1, 'avgTechOverlap':1, 'project.projectId':1, 'employee.employeeID': 1 }}
+            { $project: { 'projectId': 1, 'employeeId': 1, 'avgTechOverlap': 1, 'project.projectId': 1, 'employee.employeeID': 1, 'statusId': 1, "employee.techStack": 1, "project.techStack": 1 } },
+            {
+                $group: {
+                    _id: '$employee.employeeID',
+                    interests: { $push: '$$ROOT' },
+                    techStack: { $first: '$$ROOT.employee.techStack' },
+                    totalInterests: { $sum: 1 },
+                    acceptedInterests: {
+                        $push: {
+                            $cond: {
+                                if: { $eq: ['$statusId', 2] },
+                                then: { techOverlap: { $divide: [{ $size: { $setIntersection: ['$$ROOT.employee.techStack', '$$ROOT.project.techStack'] } }, { $size: '$$ROOT.project.techStack' }] } },
+                                else: '$$REMOVE'
+                            }
+                        }
+                    },
+                    totalInterestsAvgTechOverlap: {
+                        $avg: '$$ROOT.avgTechOverlap'
+                    },
+                    avgAcceptedTechOverlap: {
+                        
+                                $avg: {
+                                   
+                                        $cond: {
+                                            if: { $eq: ['$statusId', 2] },
+                                            then: { $divide: [{ $size: { $setIntersection: ['$$ROOT.employee.techStack', '$$ROOT.project.techStack'] } }, { $size: '$$ROOT.project.techStack' }]},
+                                            else: null
+                                        }
+                                    
+
+                                }
+                            
+
+                    }
+                }
+
+            },
 
         ]).toArray();
 
