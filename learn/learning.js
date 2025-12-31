@@ -58,7 +58,7 @@ const selectInterests = async () => {
         const projectResult = await db.collection(collections.project).updateOne({ projectId }, { $addToSet: { selectedInterests: { $each: selectedEmployeeIds } } }, { session });
         const interestResult = await db.collection(collections.interest).updateMany({ projectId }, { $set: { statusId: 2 } }, { session })
         const result = await session.commitTransaction();
-        console.log("transaction result", result);
+        console.log("transaction result", result); 
     } catch (e) {
         console.log(e);
     } finally {
