@@ -193,18 +193,18 @@ const query3 = async () => {
     }
 }
 
-const query4 =  async () => {
+const query4 = async () => {
     const projectId = 'ef77ea26-e036-4d49-945c-438b1751b001';
     const session = client.startSession();
-    await db.collection(collections.project).findOneAndUpdate({projectId}, {$unset: {'selectedInterests': []}}, {session});
+    await db.collection(collections.project).findOneAndUpdate({ projectId }, { $unset: { 'selectedInterests': [] } }, { session });
     try {
         session.startTransaction();
-        const interests = (await db.collection(collections.interest).find({projectId}, {session}).toArray()).filter((i, idx) => idx%2);
+        const interests = (await db.collection(collections.interest).find({ projectId }, { session }).toArray()).filter((i, idx) => idx % 2);
         const employeeIds = interests.map(i => i.employeeId);
         console.log(employeeIds);
         // update the status of all interests that have this projectId and employeeId in employeeIds array to 2
-        const interestResult = await db.collection(collections.interest).updateMany({projectId, employeeId: {$in: employeeIds} }, {$set: {statusId: 2}}, {session});
-        const projectResult = await db.collection(collections.project).updateOne({projectId}, {$addToSet: {selectedInterests: {$each: employeeIds}}}, {session});
+        const interestResult = await db.collection(collections.interest).updateMany({ projectId, employeeId: { $in: employeeIds } }, { $set: { statusId: 2 } }, { session });
+        const projectResult = await db.collection(collections.project).updateOne({ projectId }, { $addToSet: { selectedInterests: { $each: employeeIds } } }, { session });
         await session.commitTransaction();
     } catch (e) {
         console.error(e);
@@ -212,4 +212,76 @@ const query4 =  async () => {
         session.endSession();
     }
 }
-module.exports = { query1, query3, query4 }
+
+/* const query5 = async () => {
+    const projectStackCount = await db.collection(collections.project).aggregate([
+        {$unwind: '$techStack'},
+        {$group: {
+            _id: '$techStack',
+            count: {$sum: 1}
+        }}
+    ]).toArray();
+
+    const employeeStackCount = await db.collection(collections.employee).aggregate([
+        {$unwind: "$techStack"},
+        {$group: {
+            _id: '$techStack',
+            count: {$sum: 1}
+        }}
+    ]).toArray();
+
+    // The rest can be done in javascript
+    console.log(employeeStackCount);
+} */
+
+//Alternate solution with on aggregate
+
+const query5 = async () => {
+    try {
+        const result = await db.collection(collections.project).aggregate([
+            {
+                $project: {
+                    techStack: 1,
+                    type: 'demand'
+                }
+            },
+            {
+                $unionWith: {
+                    coll: collections.employee,
+                    pipeline: [
+                        {
+                            $project: {
+                                techStack: 1,
+                                type: 'supply'
+                            }
+                        }
+                    ]
+                }
+            },
+            { $unwind: '$techStack' },
+            {
+                $group: {
+                    _id: '$techStack',
+                    demandCount: { $sum: { $cond: [{ $eq: ['$type', 'demand'] }, 1, 0] } },
+                    supplyCount: { $sum: { $cond: [{ $eq: ['$type', 'supply'] }, 1, 0] } },
+                }
+            },
+            {$project: {
+                techStack: '$_id',
+                demandSupplyRatio: {
+                    $cond: [
+                        {$eq: ['$demandCount', 0]},
+                        'No demand for this skill',
+                        {$trunc: [{$divide: ['$supplyCount', '$demandCount']}, 2]}
+                    ]
+                }
+            }}
+        ]).toArray();
+        console.log(result);
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+
+module.exports = { query1, query3, query4, query5 }
